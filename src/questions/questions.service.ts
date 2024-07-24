@@ -30,11 +30,19 @@ export class QuestionsService {
     return questions;
   }
 
-  async create(dto: CreateQuestionDto) {
+  async create(dto: CreateQuestionDto[]) {
     return new this.questionModel({ ...dto }).save();
   }
 
-  async update(dto: UpdateQuestionDto) {
-    return this.questionModel.updateOne({ _id: dto.id }, { $set: { ...dto } });
+  async update(dto: UpdateQuestionDto[]) {
+    await Promise.all(
+      dto.map(async (question) => {
+        return await this.questionModel.findByIdAndUpdate(
+          question._id,
+          question,
+          { new: true },
+        );
+      }),
+    );
   }
 }

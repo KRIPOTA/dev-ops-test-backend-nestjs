@@ -6,5 +6,5 @@ export class UpdateQuestionDto extends CreateQuestionDto {
   @ApiProperty({ required: true, type: String })
   @IsNotEmpty()
   @IsString()
-  id: string;
+  _id: string;
 }

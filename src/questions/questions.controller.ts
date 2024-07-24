@@ -25,13 +25,13 @@ export class QuestionsController {
 
   @Post()
   @UsePipes(new ValidationPipe())
-  create(@Body() dto: CreateQuestionDto) {
+  create(@Body() dto: CreateQuestionDto[]) {
     return this.questions.create(dto);
   }
 
   @Patch()
   @UsePipes(new ValidationPipe())
-  update(@Body() dto: UpdateQuestionDto) {
+  update(@Body() dto: UpdateQuestionDto[]) {
     return this.questions.update(dto);
   }
 }

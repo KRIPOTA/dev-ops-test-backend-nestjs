@@ -6,7 +6,6 @@ import {
   ValidationPipe,
   Get,
   Param,
-  HttpException,
   Patch,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -27,9 +26,7 @@ export class UsersController {
 
   @Get('/tg/:tgId')
   async getByTgId(@Param('tgId') tgId: string) {
-    const findUser = await this.usersService.getByTgId(+tgId);
-    if (!findUser) throw new HttpException('User not found', 404);
-    return findUser;
+    return this.usersService.getByTgId(+tgId);
   }
 
   //STATS

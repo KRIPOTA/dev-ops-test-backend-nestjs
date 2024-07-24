@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -32,11 +32,17 @@ export class UsersService {
       },
     });
 
-    return newUser.save();
+    return this.getByTgId(savedUser.tgId);
   }
 
-  getByTgId(tgId: number) {
-    return this.userModel.find({ tgId: { $eq: tgId } }).populate('stats');
+  async getByTgId(tgId: number) {
+    const user = await this.userModel
+      .findOne({ tgId: { $eq: tgId } })
+      .populate('stats');
+
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    return user;
   }
 
   //STATS
