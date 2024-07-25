@@ -12,22 +12,49 @@ export class QuestionsService {
   ) {}
 
   async getFresh() {
-    const twoMonthsAgo = new Date();
-    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    // Получаем вопросы без даты публикации
+    const questionsWithoutDate = await this.questionModel.find({
+      datePublishEveryDay: { $eq: null },
+    });
 
-    const questions = await this.questionModel
-      .find({ datePublish: { $lt: twoMonthsAgo } })
-      .limit(10)
-      .sort({ datePublish: -1 });
+    if (questionsWithoutDate.length < 10) {
+      // Получаем вопросы с датой публикации более двух месяцев назад
+      const twoMonthsAgo = new Date();
+      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+      const questionsWithOldDate = await this.questionModel.find({
+        datePublishEveryDay: { $lt: twoMonthsAgo },
+      });
 
-    if (questions.length < 10) {
-      const randomQuestions = await this.questionModel.aggregate([
-        { $sample: { size: 10 } },
-      ]);
-      return [...questions, ...randomQuestions];
+      if (questionsWithoutDate.length + questionsWithOldDate.length < 10) {
+        // Получаем случайные вопросы, исключая те, которые уже есть в предыдущих массивах
+        const randomQuestions = await this.questionModel.aggregate([
+          {
+            $match: {
+              _id: {
+                $nin: questionsWithoutDate
+                  .map((q) => q._id)
+                  .concat(questionsWithOldDate.map((q) => q._id)),
+              },
+            },
+          },
+          {
+            $sample: {
+              size:
+                10 - questionsWithoutDate.length - questionsWithOldDate.length,
+            },
+          },
+        ]);
+
+        // Возвращаем все вопросы
+        return questionsWithoutDate
+          .concat(questionsWithOldDate)
+          .concat(randomQuestions);
+      } else {
+        return questionsWithoutDate.concat(questionsWithOldDate);
+      }
+    } else {
+      return questionsWithoutDate;
     }
-
-    return questions;
   }
 
   async create(dto: CreateQuestionDto[]) {
