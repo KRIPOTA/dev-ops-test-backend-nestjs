@@ -1,23 +1,63 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Question } from './schema/question.schema';
+import { Question } from './schemas/question.schema';
 import { CreateQuestionDto } from './dtos/create-question.dto';
 import { UpdateQuestionDto } from './dtos/update-question.dto';
+import { QuestionsByDate } from './schemas/questions-by-date.schema';
 
 @Injectable()
 export class QuestionsService {
   constructor(
     @InjectModel(Question.name) private questionModel: Model<Question>,
+    @InjectModel(QuestionsByDate.name)
+    private questionsByDateModel: Model<QuestionsByDate>,
   ) {}
+
+  async get() {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+
+    const questionsIds = await this.getQuestionsIdsByDate(date);
+
+    return this.questionModel.find({ _id: { $in: questionsIds } });
+  }
+
+  async getQuestionsIdsByDate(date: Date) {
+    let questionsIdsByDate = await this.questionsByDateModel.findOne({
+      date: { $eq: date },
+    });
+
+    if (!questionsIdsByDate) {
+      await this.setQuestionsIdsByDate(date);
+
+      questionsIdsByDate = await this.questionsByDateModel.findOne({
+        date: { $eq: date },
+      });
+    }
+
+    return questionsIdsByDate.questionsIds;
+  }
+
+  async setQuestionsIdsByDate(date: Date) {
+    const freshQuestions = await this.getFresh();
+    const freshQuestionsIds = freshQuestions.map((q) => q._id);
+
+    const questionsIdsByDate = {
+      date,
+      questionsIds: freshQuestionsIds,
+    };
+    await new this.questionsByDateModel(questionsIdsByDate).save();
+  }
 
   async getFresh() {
     // Получаем вопросы без даты публикации
-    const questionsWithoutDate = await this.questionModel.find({
-      datePublishEveryDay: { $eq: null },
-    });
+    let questions =
+      (await this.questionModel.find({
+        datePublishEveryDay: { $eq: null },
+      })) || [];
 
-    if (questionsWithoutDate.length < 10) {
+    if (questions.length < 10) {
       // Получаем вопросы с датой публикации более двух месяцев назад
       const twoMonthsAgo = new Date();
       twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
@@ -25,36 +65,29 @@ export class QuestionsService {
         datePublishEveryDay: { $lt: twoMonthsAgo },
       });
 
-      if (questionsWithoutDate.length + questionsWithOldDate.length < 10) {
+      questions = questions.concat(questionsWithOldDate);
+
+      if (questions.length < 10) {
         // Получаем случайные вопросы, исключая те, которые уже есть в предыдущих массивах
         const randomQuestions = await this.questionModel.aggregate([
           {
             $match: {
               _id: {
-                $nin: questionsWithoutDate
-                  .map((q) => q._id)
-                  .concat(questionsWithOldDate.map((q) => q._id)),
+                $nin: questions.map((q) => q._id),
               },
             },
           },
           {
             $sample: {
-              size:
-                10 - questionsWithoutDate.length - questionsWithOldDate.length,
+              size: 10 - questions.length,
             },
           },
         ]);
 
-        // Возвращаем все вопросы
-        return questionsWithoutDate
-          .concat(questionsWithOldDate)
-          .concat(randomQuestions);
-      } else {
-        return questionsWithoutDate.concat(questionsWithOldDate);
+        questions = questions.concat(randomQuestions);
       }
-    } else {
-      return questionsWithoutDate;
     }
+    return questions;
   }
 
   async create(dto: CreateQuestionDto[]) {

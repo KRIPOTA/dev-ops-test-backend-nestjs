@@ -20,7 +20,7 @@ export class QuestionsController {
   @Get()
   @UsePipes(new ValidationPipe())
   getFresh() {
-    return this.questions.getFresh();
+    return this.questions.get();
   }
 
   @Post()
