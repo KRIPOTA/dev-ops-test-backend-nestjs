@@ -87,7 +87,7 @@ export class QuestionsService {
         questions = questions.concat(randomQuestions);
       }
     }
-    return questions;
+    return questions.slice(0, 10);
   }
 
   async create(dto: CreateQuestionDto[]) {
@@ -98,9 +98,8 @@ export class QuestionsService {
     await Promise.all(
       dto.map(async (question) => {
         return await this.questionModel.findByIdAndUpdate(
-          question._id,
+          question.id,
           question,
-          { new: true },
         );
       }),
     );
