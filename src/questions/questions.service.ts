@@ -6,6 +6,7 @@ import { CreateQuestionDto } from './dtos/create-question.dto';
 import { UpdateQuestionDto } from './dtos/update-question.dto';
 import { QuestionsByDate } from './schemas/questions-by-date.schema';
 
+const QUESTIONS_LENGTH = 20;
 @Injectable()
 export class QuestionsService {
   constructor(
@@ -57,7 +58,7 @@ export class QuestionsService {
         datePublishEveryDay: { $eq: null },
       })) || [];
 
-    if (questions.length < 10) {
+    if (questions.length < QUESTIONS_LENGTH) {
       // Получаем вопросы с датой публикации более двух месяцев назад
       const twoMonthsAgo = new Date();
       twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
@@ -67,7 +68,7 @@ export class QuestionsService {
 
       questions = questions.concat(questionsWithOldDate);
 
-      if (questions.length < 10) {
+      if (questions.length < QUESTIONS_LENGTH) {
         // Получаем случайные вопросы, исключая те, которые уже есть в предыдущих массивах
         const randomQuestions = await this.questionModel.aggregate([
           {
@@ -79,7 +80,7 @@ export class QuestionsService {
           },
           {
             $sample: {
-              size: 10 - questions.length,
+              size: QUESTIONS_LENGTH - questions.length,
             },
           },
         ]);
@@ -87,7 +88,7 @@ export class QuestionsService {
         questions = questions.concat(randomQuestions);
       }
     }
-    return questions.slice(0, 10);
+    return questions.slice(0, QUESTIONS_LENGTH);
   }
 
   async create(dto: CreateQuestionDto[]) {
