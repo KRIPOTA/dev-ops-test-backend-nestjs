@@ -51,6 +51,13 @@ export class QuestionsService {
     await new this.questionsByDateModel(questionsIdsByDate).save();
   }
 
+  async deleteQuestionsByDate() {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+
+    await this.questionsByDateModel.deleteOne({ date: { $eq: date } });
+  }
+
   async getFresh() {
     // Получаем вопросы без даты публикации
     let questions =

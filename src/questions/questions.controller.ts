@@ -6,6 +6,7 @@ import {
   ValidationPipe,
   Patch,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dtos/create-question.dto';
@@ -33,5 +34,10 @@ export class QuestionsController {
   @UsePipes(new ValidationPipe())
   update(@Body() dto: UpdateQuestionDto[]) {
     return this.questions.update(dto);
+  }
+
+  @Delete('/by-date')
+  deleteQuestionsByDate() {
+    return this.questions.deleteQuestionsByDate();
   }
 }
