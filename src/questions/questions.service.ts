@@ -5,8 +5,6 @@ import { Question } from './schemas/question.schema';
 import { CreateQuestionDto } from './dtos/create-question.dto';
 import { UpdateQuestionDto } from './dtos/update-question.dto';
 import { QuestionsByDate } from './schemas/questions-by-date.schema';
-
-const QUESTIONS_LENGTH = 20;
 @Injectable()
 export class QuestionsService {
   constructor(
@@ -49,6 +47,37 @@ export class QuestionsService {
       questionsIds: freshQuestionsIds,
     };
     await new this.questionsByDateModel(questionsIdsByDate).save();
+    const updatedFreshQuestions = [];
+    for (const question of freshQuestions) {
+      const initialArray = question.answers;
+      const initialCorrectIndex = question.correctAnswerIndex;
+
+      const { shuffledArr, newIndex } = this.shuffleArrayAndUpdateIndex(
+        initialArray,
+        initialCorrectIndex,
+      );
+
+      question.answers = shuffledArr;
+      question.correctAnswerIndex = newIndex;
+      updatedFreshQuestions.push(question);
+    }
+    await this.update(updatedFreshQuestions);
+  }
+
+  private shuffleArrayAndUpdateIndex(arr: string[], correctIndex: number) {
+    // Create a copy of the original array to avoid modifying it
+    const shuffledArr = [...arr];
+
+    // Fisher-Yates shuffle algorithm to shuffle the array
+    for (let i = shuffledArr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledArr[i], shuffledArr[j]] = [shuffledArr[j], shuffledArr[i]];
+    }
+
+    // Update the correct index
+    const newIndex = shuffledArr.indexOf(arr[correctIndex]);
+
+    return { shuffledArr, newIndex };
   }
 
   async deleteQuestionsByDate() {
@@ -58,14 +87,14 @@ export class QuestionsService {
     await this.questionsByDateModel.deleteOne({ date: { $eq: date } });
   }
 
-  async getFresh() {
+  async getFresh(questionLength = 20) {
     // Получаем вопросы без даты публикации
     let questions =
       (await this.questionModel.find({
         datePublishEveryDay: { $eq: null },
       })) || [];
 
-    if (questions.length < QUESTIONS_LENGTH) {
+    if (questions.length < questionLength) {
       // Получаем вопросы с датой публикации более двух месяцев назад
       const twoMonthsAgo = new Date();
       twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
@@ -75,7 +104,7 @@ export class QuestionsService {
 
       questions = questions.concat(questionsWithOldDate);
 
-      if (questions.length < QUESTIONS_LENGTH) {
+      if (questions.length < questionLength) {
         // Получаем случайные вопросы, исключая те, которые уже есть в предыдущих массивах
         const randomQuestions = await this.questionModel.aggregate([
           {
@@ -87,7 +116,7 @@ export class QuestionsService {
           },
           {
             $sample: {
-              size: QUESTIONS_LENGTH - questions.length,
+              size: questionLength - questions.length,
             },
           },
         ]);
@@ -95,7 +124,7 @@ export class QuestionsService {
         questions = questions.concat(randomQuestions);
       }
     }
-    return questions.slice(0, QUESTIONS_LENGTH);
+    return questions.slice(0, questionLength);
   }
 
   async create(dto: CreateQuestionDto[]) {

@@ -31,7 +31,7 @@ export class CreateQuestionDto {
   @ApiProperty({ required: false, type: String })
   @IsOptional()
   @IsString()
-  datePublishEveryDay?: string;
+  datePublishEveryDay?: string | Date;
 
   @ApiProperty({ required: false, type: Number })
   @IsOptional()
