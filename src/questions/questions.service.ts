@@ -13,7 +13,7 @@ export class QuestionsService {
     private questionsByDateModel: Model<QuestionsByDate>,
   ) {}
 
-  async get() {
+  async getByDate() {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
 
@@ -22,6 +22,12 @@ export class QuestionsService {
       _id: { $in: questionsIds },
     });
 
+    const shuffledQuestions = this.shuffleArray([...questions]);
+    return shuffledQuestions;
+  }
+
+  async get(limit: number) {
+    const questions = await this.getFresh(limit);
     const shuffledQuestions = this.shuffleArray([...questions]);
     return shuffledQuestions;
   }

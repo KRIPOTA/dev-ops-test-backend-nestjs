@@ -7,6 +7,7 @@ import {
   Patch,
   Get,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dtos/create-question.dto';
@@ -18,10 +19,16 @@ import { ApiTags } from '@nestjs/swagger';
 export class QuestionsController {
   constructor(private questions: QuestionsService) {}
 
+  @Get('/by-date')
+  @UsePipes(new ValidationPipe())
+  getByDate() {
+    return this.questions.getByDate();
+  }
+
   @Get()
   @UsePipes(new ValidationPipe())
-  getFresh() {
-    return this.questions.get();
+  getFresh(@Query('limit') limit: string) {
+    return this.questions.get(+limit);
   }
 
   @Post()
