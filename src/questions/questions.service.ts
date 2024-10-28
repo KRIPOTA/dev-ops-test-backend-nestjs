@@ -29,7 +29,9 @@ export class QuestionsService {
   async get(limit: number) {
     const questions = await this.getFresh(limit);
     const shuffledQuestions = this.shuffleArray([...questions]);
-    return shuffledQuestions;
+    const updatedQuestions =
+      this.updateQuestionsCurrentAnswerIndex(shuffledQuestions);
+    return updatedQuestions;
   }
 
   async getQuestionsIdsByDate(date: Date) {
@@ -57,8 +59,14 @@ export class QuestionsService {
       questionsIds: freshQuestionsIds,
     };
     await new this.questionsByDateModel(questionsIdsByDate).save();
-    const updatedFreshQuestions = [];
-    for (const question of freshQuestions) {
+    const updatedFreshQuestions =
+      this.updateQuestionsCurrentAnswerIndex(freshQuestions);
+    await this.update(updatedFreshQuestions);
+  }
+
+  private updateQuestionsCurrentAnswerIndex(questions: Question[]) {
+    const updatedQuestions = [];
+    for (const question of questions) {
       const initialArray = question.answers;
       const initialCorrectIndex = question.correctAnswerIndex;
 
@@ -69,9 +77,9 @@ export class QuestionsService {
 
       question.answers = shuffledArr;
       question.correctAnswerIndex = newIndex;
-      updatedFreshQuestions.push(question);
+      updatedQuestions.push(question);
     }
-    await this.update(updatedFreshQuestions);
+    return updatedQuestions;
   }
 
   private shuffleArrayAndUpdateIndex(arr: string[], correctIndex: number) {

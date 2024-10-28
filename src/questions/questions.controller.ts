@@ -17,34 +17,34 @@ import { ApiTags } from '@nestjs/swagger';
 @Controller('questions')
 @ApiTags('Questions')
 export class QuestionsController {
-  constructor(private questions: QuestionsService) {}
+  constructor(private service: QuestionsService) {}
 
   @Get('/by-date')
   @UsePipes(new ValidationPipe())
   getByDate() {
-    return this.questions.getByDate();
+    return this.service.getByDate();
   }
 
   @Get()
   @UsePipes(new ValidationPipe())
   getFresh(@Query('limit') limit: string) {
-    return this.questions.get(+limit);
+    return this.service.get(+limit);
   }
 
   @Post()
   @UsePipes(new ValidationPipe())
   create(@Body() dto: CreateQuestionDto[]) {
-    return this.questions.create(dto);
+    return this.service.create(dto);
   }
 
   @Patch()
   @UsePipes(new ValidationPipe())
   update(@Body() dto: UpdateQuestionDto[]) {
-    return this.questions.update(dto);
+    return this.service.update(dto);
   }
 
   @Delete('/by-date')
   deleteQuestionsByDate() {
-    return this.questions.deleteQuestionsByDate();
+    return this.service.deleteQuestionsByDate();
   }
 }

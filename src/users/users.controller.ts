@@ -16,17 +16,17 @@ import { ApiTags } from '@nestjs/swagger';
 @Controller('users')
 @ApiTags('Users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private service: UsersService) {}
 
   @Post()
   @UsePipes(new ValidationPipe())
   create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+    return this.service.create(createUserDto);
   }
 
   @Get('/tg/:tgId')
   async getByTgId(@Param('tgId') tgId: string) {
-    return this.usersService.getByTgId(+tgId);
+    return this.service.getByTgId(+tgId);
   }
 
   //STATS
@@ -34,6 +34,6 @@ export class UsersController {
   @Patch('/stats')
   @UsePipes(new ValidationPipe())
   async updateUserStats(@Body() dto: UpdateUserStatsDto) {
-    return this.usersService.updateUserStats(dto);
+    return this.service.updateUserStats(dto);
   }
 }
