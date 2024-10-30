@@ -26,8 +26,8 @@ export class QuestionsService {
     return shuffledQuestions;
   }
 
-  async get(limit: number) {
-    const questions = await this.getFresh(limit);
+  async get(dto: { limit: string; tags: string[] }) {
+    const questions = await this.getFresh(+dto.limit, dto.tags);
     const shuffledQuestions = this.shuffleArray([...questions]);
     const updatedQuestions =
       this.updateQuestionsCurrentAnswerIndex(shuffledQuestions);
@@ -51,7 +51,7 @@ export class QuestionsService {
   }
 
   async setQuestionsIdsByDate(date: Date) {
-    const freshQuestions = await this.getFresh();
+    const freshQuestions = await this.getFresh(20, []);
     const freshQuestionsIds = freshQuestions.map((q) => q._id);
 
     const questionsIdsByDate = {
@@ -113,16 +113,19 @@ export class QuestionsService {
     await this.questionsByDateModel.deleteOne({ date: { $eq: date } });
   }
 
-  async getFresh(questionLength = 20) {
+  async getFresh(questionLength = 20, tags: string[]) {
     const questions = [];
-    const tags = [];
+    const usedTags = [];
+    const isTagsExist = !!tags?.length;
 
     while (questions.length < questionLength) {
+      const operatorNinTags = { $nin: usedTags };
+      const operatorInTags = { $in: tags };
       //Получаем вопрос с датой публикации равной null и тегами, которых не было
       let question = await this.questionModel.findOne({
         _id: { $nin: questions.map((q) => q._id) },
         datePublishEveryDay: { $eq: null },
-        tags: { $nin: tags },
+        tags: isTagsExist ? operatorInTags : operatorNinTags,
       });
 
       //Получаем вопрос с датой публикации более двух месяцев назад и тегами, которых не было
@@ -132,7 +135,7 @@ export class QuestionsService {
         question = await this.questionModel.findOne({
           _id: { $nin: questions.map((q) => q._id) },
           datePublishEveryDay: { $lt: twoMonthsAgo },
-          tags: { $nin: tags },
+          tags: isTagsExist ? operatorInTags : operatorNinTags,
         });
       }
 
@@ -158,7 +161,7 @@ export class QuestionsService {
       if (!question) {
         question = await this.questionModel.findOne({
           _id: { $nin: questions.map((q) => q._id) },
-          tags: { $nin: tags },
+          tags: isTagsExist ? operatorInTags : operatorNinTags,
         });
       }
 
@@ -172,7 +175,7 @@ export class QuestionsService {
       if (!question) break;
 
       questions.push(question);
-      tags.push(question.tags[3] || question.tags[2] || '');
+      usedTags.push(question.tags[3] || question.tags[2] || '');
     }
 
     return questions;

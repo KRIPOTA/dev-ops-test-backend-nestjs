@@ -27,8 +27,8 @@ export class QuestionsController {
 
   @Get()
   @UsePipes(new ValidationPipe())
-  getFresh(@Query('limit') limit: string) {
-    return this.service.get(+limit);
+  getFresh(@Query() dto: { limit: string; tags: string[] }) {
+    return this.service.get(dto);
   }
 
   @Post()
